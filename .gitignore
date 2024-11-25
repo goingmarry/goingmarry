@@ -121,7 +121,7 @@ ipython_config.py
 #   https://pdm.fming.dev/#use-with-ide
 .pdm.toml
 
-# PEP 582; used by e.g. github.com/David-OConnor/pyflow and github.com/pdm-project/pdm
+# PEP 582; used by e.g. .github.com/David-OConnor/pyflow and .github.com/pdm-project/pdm
 __pypackages__/
 
 # Celery stuff
@@ -225,7 +225,7 @@ cython_debug/
 #   in version control.
 #   https://pdm.fming.dev/#use-with-ide
 
-# PEP 582; used by e.g. github.com/David-OConnor/pyflow and github.com/pdm-project/pdm
+# PEP 582; used by e.g. .github.com/David-OConnor/pyflow and .github.com/pdm-project/pdm
 
 # Celery stuff
 
