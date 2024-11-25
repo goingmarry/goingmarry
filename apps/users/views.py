@@ -1,6 +1,9 @@
+import random
+from datetime import datetime, timedelta
 from typing import Any, cast
 
 from django.core.cache import cache
+from django.core.mail import send_mail
 from django.utils import timezone
 from rest_framework import generics, status
 from rest_framework.permissions import IsAuthenticated
@@ -11,7 +14,7 @@ from rest_framework_simplejwt.views import TokenObtainPairView
 from apps.logins.models import Login
 
 from .models import User
-from .serializers import UserCreateSerializer
+from .serializers import UserCreateSerializer, VerificationSerializer
 
 
 class UserSignupView(generics.CreateAPIView[User]):
@@ -59,3 +62,48 @@ class UserDeactivateView(generics.UpdateAPIView[User]):
         user.is_active = False
         user.save()
         return Response(status=status.HTTP_200_OK)
+
+
+class SendVerificationView(generics.GenericAPIView[User]):
+    def post(self, request: Request) -> Response:
+        user = cast(User, request.user)
+        code = str(random.randint(100000, 99999))
+        user.verification_code = code
+        user.code_created_at = timezone.now()
+        user.save()
+
+        # 이메일 발송
+        send_mail(
+            "인증 코드",
+            f"인증 코드 : {code}",
+            "from@example.com",
+            [user.email],
+            fail_silently=False,
+        )
+        return Response(status=status.HTTP_200_OK)
+
+
+class VerifyCodeView(generics.GenericAPIView[User]):
+    serializer_class = VerificationSerializer
+
+    def post(self, request: Request) -> Response:
+        user = cast(User, request.user)
+        code = request.data.get("verification_code")
+
+        if (
+            not user.code_created_at
+            or timezone.now() > user.code_created_at + timedelta(minutes=5)
+        ):
+            return Response(
+                {"error": "인증 코드가 만료되었습니다."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        if code == user.verification_code:
+            user.email_verified = True
+            user.save()
+            return Response(status=status.HTTP_200_OK)
+
+        return Response(
+            {"error": "잘못된 인증 코드"}, status=status.HTTP_400_BAD_REQUEST
+        )

@@ -23,3 +23,7 @@ class NicknameUpdateSerializer(serializers.ModelSerializer[User]):
     class Meta:
         model = User
         fields = ["nickname"]
+
+
+class VerificationSerializer(serializers.Serializer[Any]):
+    verification_code = serializers.CharField(max_length=6)
