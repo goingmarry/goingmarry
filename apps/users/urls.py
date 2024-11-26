@@ -14,4 +14,8 @@ urlpatterns = [
         "verify/send/", views.SendVerificationView.as_view(), name="send-verification"
     ),
     path("verify/confirm/", views.VerifyCodeView.as_view(), name="verify-code"),
+    path("nickname/", views.NicknameUpdateView.as_view(), name="update-nickname"),
+    path(
+        "token/refresh/", views.CustomTokenRefreshView.as_view(), name="token-refresh"
+    ),
 ]
