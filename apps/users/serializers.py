@@ -1,15 +1,11 @@
 from typing import Any, Dict
 
 from django.contrib.auth import authenticate  # 유저 인증을 처리하는 함수
-from django.contrib.auth.hashers import (
-    make_password,
-)  # 패스워드를 해싱(암호화)하는 함수
+from django.contrib.auth.hashers import make_password  # 패스워드를 해싱(암호화)하는 함수
 from rest_framework import serializers  # DRF에서 제공하는 직렬화(Serializer) 도구
-
-# JWT를 처리하는 기본 직렬화 도구
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 
-from .models import User
+from .models import User  # 사용자 정의 모델 임포트
 
 
 # 닉네임 업데이트용 Serializer 클래스
