@@ -22,6 +22,10 @@ line-length = 88
 [tool.isort]
 profile = "black"
 line_length = 88
+multi_line_output = 3  # Black과 호환되는 출력 방식
+include_trailing_comma = true  # Black과 통일된 쉼표 사용
+force_grid_wrap = 0
+use_parentheses = true
 
 [tool.mypy]
 plugins = ["mypy_django_plugin.main"]
