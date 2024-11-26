@@ -1,6 +1,6 @@
 import random
 from datetime import datetime, timedelta
-from typing import Any, cast
+from typing import Any, Type, cast
 
 from django.core.cache import cache
 from django.core.mail import send_mail
@@ -14,7 +14,11 @@ from rest_framework_simplejwt.views import TokenObtainPairView
 from apps.logins.models import Login
 
 from .models import User
-from .serializers import UserCreateSerializer, VerificationSerializer
+from .serializers import (
+    CustomTokenObtainPairSerializer,
+    UserCreateSerializer,
+    VerificationSerializer,
+)
 
 
 class UserSignupView(generics.CreateAPIView[User]):
@@ -23,11 +27,28 @@ class UserSignupView(generics.CreateAPIView[User]):
 
 
 class LoginView(TokenObtainPairView):
+    serializer_class = CustomTokenObtainPairSerializer  # type: ignore
+
     def post(self, request: Request, *args: Any, **kwargs: Any) -> Response:
-        response = super().post(request, *args, **kwargs)
-        if response.status_code == 200:
-            tokens = response.data
-            user = User.objects.get(user_id=request.data["user_id"])
+        try:
+            user = User.objects.get(user_id=request.data.get("user_id"))
+            if not user.is_active:
+                return Response(
+                    {"error": "Account is not active"},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+
+            serializer = self.get_serializer(data=request.data)
+
+            if not serializer.is_valid():
+                return Response(
+                    {"error": "Invalid credentials"}, status=status.HTTP_400_BAD_REQUEST
+                )
+
+            response = Response(serializer.validated_data, status=status.HTTP_200_OK)
+
+            # 토큰 저장 및 로그인 기록
+            tokens = serializer.validated_data
             cache.set(
                 f"token:{user.user_id}", tokens["refresh"], timeout=60 * 60 * 24 * 7
             )
@@ -35,9 +56,15 @@ class LoginView(TokenObtainPairView):
                 user_num=user,
                 user_ip=request.META.get("REMOTE_ADDR", ""),
                 user_agent=request.META.get("HTTP_USER_AGENT", ""),
-                is_success=True,
+                is_successful=True,
             )
-        return response
+
+            return response
+
+        except User.DoesNotExist:
+            return Response(
+                {"error": "User not found"}, status=status.HTTP_400_BAD_REQUEST
+            )
 
 
 class LogoutView(generics.GenericAPIView[User]):

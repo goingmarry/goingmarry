@@ -39,7 +39,9 @@ class User(AbstractBaseUser, PermissionsMixin):
     updated_at = models.DateTimeField(auto_now=True)
 
     # 이메일 & 핸드폰 번호 인증
-    phone_number = models.CharField(max_length=15, null=False, default='0000000000')  # 기본값 추가
+    phone_number = models.CharField(
+        max_length=15, null=False, default="0000000000"
+    )  # 기본값 추가
     email_verified = models.BooleanField(default=False)
     phone_verified = models.BooleanField(default=False)
     verification_code = models.CharField(max_length=6, null=True, blank=True)
