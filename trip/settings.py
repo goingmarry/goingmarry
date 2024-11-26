@@ -142,9 +142,9 @@ DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
 # REDIS & JWT 설정
 CACHES = {
-        'default': {
-        'BACKEND': 'django.core.cache.backends.locmem.LocMemCache',
-        },
+    "default": {
+        "BACKEND": "django.core.cache.backends.locmem.LocMemCache",
+    },
 }
 
 REST_FRAMEWORK = {
@@ -165,3 +165,13 @@ SIMPLE_JWT = {
 AUTHENTICATION_BACKENDS = [
     "django.contrib.auth.backends.ModelBackend",
 ]
+
+
+# 이메일 인증 구현
+EMAIL_BACKEND = "django.core.mail.backends.smtp.EmailBackend"
+EMAIL_HOST = "smtp.gmail.com"  # Gmail 사용
+EMAIL_PORT = 587
+EMAIL_USE_TLS = True
+EMAIL_HOST_USER = "jeajun18@gmail.com"  # 실제 Gmail 계정
+EMAIL_HOST_PASSWORD = "bxtp osnl zaiz zemb"  # 앱 비밀번호
+DEFAULT_FROM_EMAIL = EMAIL_HOST_USER

@@ -12,6 +12,7 @@ from rest_framework.response import Response
 from rest_framework_simplejwt.views import TokenObtainPairView
 
 from apps.logins.models import Login
+from trip import settings
 
 from .models import User
 from .serializers import (
@@ -92,45 +93,77 @@ class UserDeactivateView(generics.UpdateAPIView[User]):
 
 
 class SendVerificationView(generics.GenericAPIView[User]):
+    permission_classes = [IsAuthenticated]
+
     def post(self, request: Request) -> Response:
         user = cast(User, request.user)
-        code = str(random.randint(100000, 99999))
+
+        # 이미 인증된 사용자 체크
+        if user.email_verified:
+            return Response(
+                {"error": "Email already verified"},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        code = "".join(str(random.randint(0, 9)) for _ in range(6))
         user.verification_code = code
         user.code_created_at = timezone.now()
         user.save()
 
-        # 이메일 발송
-        send_mail(
-            "인증 코드",
-            f"인증 코드 : {code}",
-            "from@example.com",
-            [user.email],
-            fail_silently=False,
-        )
-        return Response(status=status.HTTP_200_OK)
+        try:
+            # 이메일 발송
+            send_mail(
+                "[Trip] 이메일 인증 코드",
+                f"인증 코드 : {code}\n이 코드는 5분간 유효합니다.",
+                settings.EMAIL_HOST_USER,
+                [user.email],
+                fail_silently=False,
+            )
+            return Response(
+                {"message": "Verification code sent"}, status=status.HTTP_200_OK
+            )
+        except Exception as e:
+            return Response(
+                {"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
 
 
 class VerifyCodeView(generics.GenericAPIView[User]):
+    permission_classes = [IsAuthenticated]
     serializer_class = VerificationSerializer
 
     def post(self, request: Request) -> Response:
         user = cast(User, request.user)
         code = request.data.get("verification_code")
 
+        # 코드 만료 체크 (5분))
         if (
             not user.code_created_at
             or timezone.now() > user.code_created_at + timedelta(minutes=5)
         ):
             return Response(
-                {"error": "인증 코드가 만료되었습니다."},
+                {"error": "Verification code has expired"},
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
-        if code == user.verification_code:
-            user.email_verified = True
-            user.save()
-            return Response(status=status.HTTP_200_OK)
+        if not code:
+            return Response(
+                {"error": "Verification code is required"},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        if code != user.verification_code:
+            return Response(
+                {"error": "Invalid verification code"},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        user.email_verified = True
+        user.verification_code = None  # 사용된 코드 제거
+        user.code_created_at = None
+        user.save()
 
         return Response(
-            {"error": "잘못된 인증 코드"}, status=status.HTTP_400_BAD_REQUEST
+            {"message": "Email successfully verified"},
+            status=status.HTTP_200_OK,
         )
