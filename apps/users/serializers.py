@@ -61,24 +61,22 @@ class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
 
 # 사용자 생성용 Serializer 클래스
 class UserCreateSerializer(serializers.ModelSerializer[User]):
-    # password 필드 정의 (쓰기 전용으로 설정)
+    # password 필드는 입력 시에만 사용되고 반환 시에는 제외되는 필드입니다.
     password = serializers.CharField(write_only=True)
 
     class Meta:
-        # User 모델을 사용
+        # 직렬화할 모델을 User 로 지정
         model = User
+        # 직렬화할 필드들 지정
         fields = ["user_id", "password", "nickname", "email", "gender"]
-        # 직렬화에서 처리할 필드 지정
+        # gender 필드는 선택 사항이므로 extra_kwargs로 필수 여부를 False로 설정
         extra_kwargs = {
             "gender": {"required": False},
-            # gender 필드를 필수 입력이 아닌 선택 입력으로 설정
         }
 
-    # 사용자 생성을 처리하는 메서드
+    # 사용자가 제출한 데이터를 기반으로 사용자 객체를 생성하는 메서드
     def create(self, validated_data: Dict[str, Any]) -> User:
-        # 입력 받은 비밀번호를 해싱하여 저장
-        validated_data["password"] = make_password(validated_data.get("password"))
-        # User 모델의 create 메서드를 호출하여 사용자 생성
-        user: User = User.objects.create(**validated_data)
-        # 생성된 사용자 객체 반환
+        # vlidataed_data에 포함된 데이터를 사용하여 User 객체 생성 (비밀번호는 해시화(암호화)) 하여 저장됨)
+        user = User.objects.create_user(**validated_data)
+        # 생성된 User 객체 반환
         return user

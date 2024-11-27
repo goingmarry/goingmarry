@@ -1,240 +1,180 @@
-import random
-from datetime import datetime, timedelta
-from typing import Any, Type, cast
+# 타입 힌팅을 위해 필요한 모듈
+from typing import Any, cast
 
+# 캐시 관련 기능
 from django.core.cache import cache
-from django.core.mail import send_mail
-from django.utils import timezone
-from rest_framework import generics, status
-from rest_framework.permissions import IsAuthenticated
-from rest_framework.request import Request
-from rest_framework.response import Response
-from rest_framework_simplejwt.exceptions import InvalidToken
-from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
 
-from apps.logins.models import Login
-from trip import settings
+# HTTP 상태 코드 관리하는 모듈
+from rest_framework import status
+
+# 인증된 사용자만 접근을 허용하는 권한 클래스
+from rest_framework.permissions import IsAuthenticated
+
+# DRF의 Request 클래스를 임포트하여 응답 객체를 생성
+from rest_framework.request import Request
+
+# DRF의 Response 클래스를 임포트하여 응답 객체를 사용
+from rest_framework.response import Response
+
+# APIView를 상속받아 HTTP 요청을 처리하는 뷰 클래스를 생성
+from rest_framework.views import APIView
+
+# JWT토큰 관련 처리를 위한 RefreshToken 임포트
+from rest_framework_simplejwt.tokens import RefreshToken
 
 from .models import User
-from .serializers import (
-    CustomTokenObtainPairSerializer,
-    NicknameUpdateSerializer,
-    UserCreateSerializer,
-    VerificationSerializer,
-)
+from .serializers import UserCreateSerializer
+from .services import UserService
 
 
-# 회원가입 뷰 - CreateAPIView를 사용해 User를 생성하는 API
-class UserSignupView(generics.CreateAPIView[User]):
-    # User 모델의 모든 데이터를 쿼리셋으로 사용
-    queryset = User.objects.all()
-    # User 생성에 사용할 시리얼라이저 지정
-    serializer_class = UserCreateSerializer
-
-
-# 로그인 뷰 - JWT 토큰 발급을 처리
-class LoginView(TokenObtainPairView):
-    serializer_class = CustomTokenObtainPairSerializer  # type: ignore
-
-    def post(self, request: Request, *args: Any, **kwargs: Any) -> Response:
-        response = super().post(request, *args, **kwargs)
-        if response.status_code == 200:
-            tokens = response.data
-            user = User.objects.get(user_id=request.data["user_id"])
-            # Redis에 리프레시 토큰 저장
-            cache.set(
-                f"token:{user.user_id}", tokens["refresh"], timeout=60 * 60 * 24 * 7
-            )
-            Login.objects.create(
-                user_num=user,
-                user_ip=request.META.get("REMOTE_ADDR", ""),
-                user_agent=request.META.get("HTTP_USER_AGENT", ""),
-                is_successful=True,
-            )
-        return response
-
-
-# 로그아웃 뷰 - 캐시와 로그인 기록을 갱신
-class LogoutView(generics.GenericAPIView[User]):
-    permission_classes = [IsAuthenticated]
-
+# 사용자 회원가입을 처리하는 뷰 클래스
+class SignupView(APIView):
+    # 요청으로 받은 데이터로 UserCreateSerializer 객체 생성
     def post(self, request: Request) -> Response:
+        serializer = UserCreateSerializer(data=request.data)
+
+        # 직렬화된 데이터가 유효한지 확인
+        if serializer.is_valid():
+            try:
+                # 유효한 데이터로 사용자 생성
+                user = UserService.create_user(serializer.validated_data)
+                # 사용자 생성 성공 시 응답 반환 (201 Created)
+                return Response(serializer.data, status=status.HTTP_201_CREATED)
+            except Exception as e:
+                # 예외 발생 시 오류 메시지 반환 (400 Bad Request)
+                return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+        # 직렬화된 데이터가 유효하지 않으면 오류 메시지 반환
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+# 사용자 로그인 처리를 위한 뷰 클래스
+class LoginView(APIView):
+    def post(self, request: Request) -> Response:
+        # 요청 데이터에서 user_id와 password 추출
+        user_id = request.data.get("user_id")
+        password = request.data.get("password")
+
+        # user_id나 password가 없으면 오류 메시지 반환
+        if not user_id or not password:
+            return Response(
+                {"error": "Both user_id and password are required"},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
         try:
-            user = cast(User, request.user)
-            refresh_token = request.data.get("refresh")  # 변수명 변경
-
-            if refresh_token:  # 변수명 변경
-                # 리프레시 토큰 블랙리스트에 추가
-                cache.set(
-                    f"blacklist:{refresh_token}",  # 변수명 변경
-                    "blacklisted",
-                    timeout=60 * 60 * 24 * 7,  # 7일
-                )
-                # 기존 토큰 삭제
-                cache.delete(f"token:{user.user_id}")
-
-                try:
-                    # 로그아웃 기록
-                    login = Login.objects.filter(user_num=user).latest("login_at")
-                    login.logout_at = timezone.now()
-                    login.save()
-                except Login.DoesNotExist:
-                    pass
-
+            # 주어진 user_id로 사용자 검색
+            user = User.objects.get(user_id=user_id)
+            # 비밀번호가 맞는지 확인
+            if user.check_password(password):
+                # 비활성 사용자일 경우 오류 메시지 반환
+                if not user.is_active:
+                    return Response(
+                        {"error": "User account is not active"},
+                        status=status.HTTP_401_UNAUTHORIZED,
+                    )
+                # 로그인 처리 후 토큰 생성
+                tokens = UserService.handle_login(user, request.META)
+                return Response(tokens, status=status.HTTP_200_OK)
+            else:
+                # 비밀번호가 잘못된 경우 오류 메시지 반환
                 return Response(
-                    {"message": "Successfully logged out"}, status=status.HTTP_200_OK
+                    {"error": "Invalid password"}, status=status.HTTP_401_UNAUTHORIZED
                 )
-
+        except User.DoesNotExist:
+            # 사용자가 존재하지 않는 경우 오류 메시지 반환
             return Response(
-                {"error": "Refresh token is required"},
-                status=status.HTTP_400_BAD_REQUEST,
+                {"error": "User not found"}, status=status.HTTP_401_UNAUTHORIZED
             )
-
         except Exception as e:
-            return Response(
-                {"error": f"An error occurred during logout: {str(e)}"},
-                status=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            )
-
-
-# 사용자 비활성화 뷰 - 계정 상태 변경
-class UserDeactivateView(generics.UpdateAPIView[User]):
-    # 인증된 사용자만 접근 가능
-    permission_classes = [IsAuthenticated]
-
-    def patch(self, request: Request, *args: Any, **kwargs: Any) -> Response:
-        # 현재 요청 사용자
-        user = cast(User, request.user)
-        # 계정 비활성화
-        user.is_active = False
-        # 상태 저장
-        user.save()
-        # 성공 응답
-        return Response(status=status.HTTP_200_OK)
-
-
-# 인증 코드 발송 뷰 - 이메일로 인증 코드 전송
-class SendVerificationView(generics.GenericAPIView[User]):
-    # 인증된 사용자만 접근 가능
-    permission_classes = [IsAuthenticated]
-
-    def post(self, request: Request) -> Response:
-        user = cast(User, request.user)
-
-        # 이미 인증된 이메일인지 확인
-        if user.email_verified:
-            return Response(
-                {"error": "Email already verified"},
-                status=status.HTTP_400_BAD_REQUEST,
-            )
-
-        # 인증 코드 생성 (6자리 랜덤 숫자)
-        code = "".join(str(random.randint(0, 9)) for _ in range(6))
-        user.verification_code = code  # 생성한 코드 저장
-        user.code_created_at = timezone.now()  # 코드 생성 시간 저장
-        user.save()
-
-        try:
-            # 이메일 발송
-            send_mail(
-                "[Trip] 이메일 인증 코드",
-                f"인증 코드 : {code}\n이 코드는 5분간 유효합니다.",
-                settings.EMAIL_HOST_USER,
-                [user.email],  # 사용자의 이메일 주소
-                fail_silently=False,  # 에러 발생 시 예외 발생
-            )
-            return Response(
-                {"message": "Verification code sent"}, status=status.HTTP_200_OK
-            )
-        # 이메일 발송 실패 시
-        except Exception as e:
+            # 예외가 발생한 경우 내부 서버 오류 메시지 반환
             return Response(
                 {"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
 
 
-# 인증 코드 확인 뷰 - 발송된 인증 코드를 검증
-class VerifyCodeView(generics.GenericAPIView[User]):
+# 사용자 로그아웃 처리를 위한 뷰 클래스
+class LogoutView(APIView):
     # 인증된 사용자만 접근 가능
     permission_classes = [IsAuthenticated]
-    # 인증 코드 검증용 시리얼라이저
-    serializer_class = VerificationSerializer
 
     def post(self, request: Request) -> Response:
-        # 현재 요청 사용자
-        user = cast(User, request.user)
-        # 요청 데이터에서 코드 추출
-        code = request.data.get("verification_code")
+        try:
+            # 현재 요청한 사용자를 user 객체로 변환
+            user = cast(User, request.user)
+            # 요청 데이터에서 refresh token 추출
+            refresh_token = request.data.get("refresh")
 
-        # 코드 만료 체크 (5분)
-        if (
-            not user.code_created_at
-            or timezone.now() > user.code_created_at + timedelta(minutes=5)
-        ):
+            # refresh token이 없는 경우 오류 메시지 반환
+            if not refresh_token:
+                return Response(
+                    {"error": "Refresh token is required"},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+            # 로그아웃 처리
+            if UserService.handle_logout(user, refresh_token):
+                return Response(
+                    {"message": "Successfully logged out"}, status=status.HTTP_200_OK
+                )
+
+            # 로그아웃 처리 실패 시 오류 메시지 반환
             return Response(
-                {"error": "Verification code has expired"},
-                status=status.HTTP_400_BAD_REQUEST,
+                {"error": "Logout failed"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
 
-        # 인증 코드가 제공되지 않은 경우
-        if not code:
+        except Exception as e:
+            # 예외 발생 시 오류 메시지 반환
             return Response(
-                {"error": "Verification code is required"},
-                status=status.HTTP_400_BAD_REQUEST,
+                {"error": f"Logout error: {str(e)}"},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR,
             )
 
-        # 코드가 일치하지 않는 경우
-        if code != user.verification_code:
-            return Response(
-                {"error": "Invalid verification code"},
-                status=status.HTTP_400_BAD_REQUEST,
-            )
 
-        # 이메일 인증 완료 처리
-        # 인증 상태로 변경
-        user.email_verified = True
-        # 사용한 인증 코드는 삭제
-        user.verification_code = None
-        # 인증 코드 생성 시간 초기화
-        user.code_created_at = None
-        user.save()
-
-        return Response(
-            {"message": "Email successfully verified"},
-            status=status.HTTP_200_OK,
-        )
-
-
-class NicknameUpdateView(generics.UpdateAPIView[User]):
-    permisson_classes = [IsAuthenticated]
-    serializer_class = NicknameUpdateSerializer
-
-    def get_object(self) -> User:
-        return cast(User, self.request.user)
-
-    def patch(self, request: Request, *args: Any, **kwargs: Any) -> Response:
-        user = self.get_object()
-        serializer = self.get_serializer(user, data=request.data, partial=True)
-
-        if serializer.is_valid():
-            serializer.save()
-            return Response(
-                {"message": "Nickname updated successfully"},
-                status=status.HTTP_200_OK,
-            )
-
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-
-
-class CustomTokenRefreshView(TokenRefreshView):
-    def post(self, request: Request, *args: Any, **kwargs: Any) -> Response:
+# 리프레시 토큰을 사용하여 액세스 토큰을 갱신하는 뷰 클래스
+class TokenRefreshView(APIView):
+    def post(self, request: Request) -> Response:
+        # 요청 데이터에서 refresh token 추출
         refresh_token = request.data.get("refresh")
 
-        # Redis에서 블랙리스트 확인
-        if cache.get(f"blacklist:{refresh_token}"):
+        # refresh token 이 없는 경우 오류 메시지 반환
+        if not refresh_token:
             return Response(
-                {"error": "Token is blacklisted"}, status=status.HTTP_400_BAD_REQUEST
+                {"error": "Refresh token is required"},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        # 블랙리스트에 있는지 확인
+        if UserService.is_token_blacklisted(refresh_token):
+            return Response(
+                {"error": "Token is blacklisted"}, status=status.HTTP_401_UNAUTHORIZED
             )
 
-        response = super().post(request, *args, **kwargs)
-        return response
+        try:
+            # RefreshToken 객체를 사용하여 액세스 토큰 갱신
+            refresh = RefreshToken(refresh_token)
+            return Response(
+                {"access": str(refresh.access_token)}, status=status.HTTP_200_OK
+            )
+        except Exception:
+            # 토큰이 잘못된 경우 오류 메시지 반환
+            return Response(
+                {"error": "Invalid token"}, status=status.HTTP_401_UNAUTHORIZED
+            )
+
+
+# 사용자의 계정을 비활성화하는 뷰 클래스
+class UserDeactivateView(APIView):
+    # 인증된 사용자만 접근 가능
+    permission_classes = [IsAuthenticated]
+
+    def patch(self, request: Request) -> Response:
+        try:
+            # 요청한 사용자를 user 객체로 변환
+            user = cast(User, request.user)
+            # 사용자 계정을 비활성화
+            UserService.deactivate_user(user)
+            return Response(status=status.HTTP_200_OK)
+
+        except Exception as e:
+            # 예외 발생 시 오류 메시지 반환
+            return Response(
+                {"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
