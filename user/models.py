@@ -28,15 +28,16 @@ class CustomUserManager(BaseUserManager[Any]):
 
 
 class User(AbstractBaseUser, PermissionsMixin):
-    user_num = models.BigAutoField(primary_key=True)
-    user_id = models.CharField(max_length=50, unique=True)
+    id = models.BigAutoField(primary_key=True)
+    username = models.CharField(max_length=50, unique=True)
     password = models.CharField(max_length=255)
     nickname = models.TextField()
     email = models.CharField(max_length=100, unique=True)
     gender = models.CharField(max_length=10, null=True, blank=True)
     is_active = models.BooleanField(default=True)
+    is_staff = models.BooleanField(default=False)  # 추가
     created_at = models.DateTimeField(auto_now_add=True)
-    updated_at = models.DateTimeField(auto_now=True)
+    updated_at = models.DateTimeField(auto_now_add=True)
 
     # 이메일 & 핸드폰 번호 인증
     phone_number = models.CharField(
@@ -49,8 +50,8 @@ class User(AbstractBaseUser, PermissionsMixin):
 
     objects = CustomUserManager()
 
-    USERNAME_FIELD = "user_id"
+    USERNAME_FIELD = "username"
     REQUIRED_FIELDS = ["nickname", "email"]
 
     def __str__(self) -> str:
-        return self.user_id
+        return self.username
