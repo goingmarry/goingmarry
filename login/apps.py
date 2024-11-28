@@ -1,6 +1,6 @@
 from django.apps import AppConfig
 
 
-class TapsConfig(AppConfig):
+class loginConfig(AppConfig):
     default_auto_field = "django.db.models.BigAutoField"
-    name = "apps.taps"
+    name = "login"

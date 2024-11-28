@@ -11,8 +11,8 @@ from rest_framework.request import Request
 from rest_framework.response import Response
 from rest_framework_simplejwt.views import TokenObtainPairView
 
-from apps.logins.models import Login
-from trip import settings
+from config import settings
+from login.models import Login
 
 from .models import User
 from .serializers import (
@@ -22,7 +22,7 @@ from .serializers import (
 )
 
 
-class UserSignupView(generics.CreateAPIView[User]):
+class userignupView(generics.CreateAPIView[User]):
     queryset = User.objects.all()
     serializer_class = UserCreateSerializer
 
@@ -113,7 +113,7 @@ class SendVerificationView(generics.GenericAPIView[User]):
         try:
             # 이메일 발송
             send_mail(
-                "[Trip] 이메일 인증 코드",
+                "[config] 이메일 인증 코드",
                 f"인증 코드 : {code}\n이 코드는 5분간 유효합니다.",
                 settings.EMAIL_HOST_USER,
                 [user.email],

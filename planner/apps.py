@@ -1,6 +1,6 @@
 from django.apps import AppConfig
 
 
-class LoginsConfig(AppConfig):
+class plannerConfig(AppConfig):
     default_auto_field = "django.db.models.BigAutoField"
-    name = "apps.logins"
+    name = "planner"

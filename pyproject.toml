@@ -1,5 +1,5 @@
 [tool.poetry]
-name = "trip"
+name = "config"
 version = "0.1.0"
 description = ""
 authors = ["Your Name <you@example.com>"]
@@ -12,7 +12,6 @@ pymysql = "^1.1.1"
 cryptography = "^43.0.3"
 djangorestframework = "^3.15.2"
 djangorestframework-simplejwt = "^5.3.1"
-django-redis = "^5.4.0"
 djangorestframework-stubs = "^3.15.1"
 django-stubs = "^5.1.1"
 
@@ -37,7 +36,7 @@ module = "manage"
 ignore_errors = true
 
 [tool.django-stubs]
-django_settings_module = "trip.settings"
+django_settings_module = "config.settings"
 
 [tool.poetry.group.dev.dependencies]
 black = "^24.10.0"
