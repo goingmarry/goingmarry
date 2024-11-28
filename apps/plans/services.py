@@ -12,24 +12,40 @@ class PlanService:
     def get_plans(user: "User", search_keyword: Optional[str] = None) -> QuerySet[Plan]:
         query = Plan.objects.filter(
             planner_id=user.user_num, is_deleted=False
-        )  # user.user_num 사용
+        )  # 수정된 부분
         if search_keyword:
             query = query.filter(title__icontains=search_keyword)
         return query.order_by("ordering_num")
 
     @staticmethod
     def create_plan(data: Dict[str, Any], user: "User") -> Plan:
+        # user_num을 planner로 설정
+        data["planner_id"] = user.user_num  # user가 아닌 user_num으로 설정
         return Plan.objects.create(**data)
 
     @staticmethod
     def update_plan(plan_id: int, data: Dict[str, Any], user: "User") -> Plan:
-        plan = Plan.objects.get(
-            id=plan_id, planner_id=user.user_num
-        )  # user.user_num 사용
-        for key, value in data.items():
-            setattr(plan, key, value)
-        plan.save()
-        return plan
+        try:
+            plan = Plan.objects.get(id=plan_id, planner_id=user.user_num)  # 수정된 부분
+            print(f"Debug - Plan planner_id: {plan.planner_id}")
+            print(f"Debug - User user_num: {user.user_num}")
+
+            if plan.planner_id != user.user_num:
+                print(
+                    f"Debug - Authorization failed: {plan.planner_id} != {user.user_num}"
+                )
+                raise PermissionError("Not authorized to update this plan")
+
+            # 데이터 업데이트
+            for key, value in data.items():
+                if hasattr(plan, key):  # 해당 필드가 있는지 확인
+                    setattr(plan, key, value)
+
+            plan.save()
+            return plan
+
+        except Plan.DoesNotExist:
+            raise Plan.DoesNotExist(f"Plan with id {plan_id} does not exist")
 
     @staticmethod
     def delete_plan(plan_id: int, user: "User") -> bool:

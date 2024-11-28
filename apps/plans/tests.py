@@ -15,7 +15,6 @@ from .models import Plan
 
 class PlanTests(APITestCase):
     def setUp(self) -> None:
-        # 테스트 유저 생성은 유지
         self.user = User.objects.create_user(
             user_id="testuser",
             password="testpass123",
@@ -23,16 +22,14 @@ class PlanTests(APITestCase):
             email="test@test.com",
         )
 
-        # planner_id는 user와 연관되어야 함
         self.plan_data = {
-            "planner_id": self.user.user_num,  # id -> user_num
+            "planner_id": self.user.user_num,  # planner -> planner_id
             "ordering_num": 1,
             "title": "Test Plan",
             "start_date": "2024-01-01",
             "end_date": "2024-01-02",
         }
 
-        # 토큰 설정 유지
         refresh = RefreshToken.for_user(self.user)
         access_token = cast(Any, refresh).access_token
         self.client.credentials(HTTP_AUTHORIZATION=f"Bearer {str(access_token)}")
