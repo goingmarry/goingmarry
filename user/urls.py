@@ -12,9 +12,3 @@ urlpatterns = [
     path("token/refresh/", views.TokenRefreshView.as_view(), name="token-refresh"),
 ]
 
-
-# path(
-#     "verify/send/", views.SendVerificationView.as_view(), name="send-verification"
-# ),
-# path("verify/confirm/", views.VerifyCodeView.as_view(), name="verify-code"),
-# path("nickname/", views.NicknameUpdateView.as_view(), name="update-nickname"),

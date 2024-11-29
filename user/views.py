@@ -1,9 +1,6 @@
 # 타입 힌팅을 위해 필요한 모듈
 from typing import Any, cast
 
-# 캐시 관련 기능
-from django.core.cache import cache
-
 # HTTP 상태 코드 관리하는 모듈
 from rest_framework import status
 

@@ -1,6 +1,5 @@
 from typing import Any, Dict
 
-from django.core.cache import cache
 from django.test import TestCase
 from django.urls import reverse
 from rest_framework import status
@@ -17,7 +16,6 @@ class UserTests(APITestCase):
             "nickname": "testnick",
             "email": "test@test.com",
         }
-        cache.clear()
 
     def test_signup(self) -> None:
         url = reverse("user:signup")  # users -> user
@@ -104,4 +102,3 @@ class UserTests(APITestCase):
     def testDown(self) -> None:
         # 테스트 종료 후 실행되는 메서드
         User.objects.all().delete()
-        cache.clear()

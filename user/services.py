@@ -1,8 +1,7 @@
-import hashlib  # 상단에 import 추가
+# user/services.py
 from typing import Any, Dict, Optional, cast
 
 from django.contrib.auth.hashers import make_password
-from django.core.cache import cache
 from django.utils import timezone
 from rest_framework_simplejwt.tokens import RefreshToken
 
@@ -42,14 +41,6 @@ class UserService:
                 "access": str(cast(RefreshToken, refresh).access_token),
             }
 
-            # 토큰을 해시로 변환하여 저장
-            hashed_token = hashlib.md5(tokens["refresh"].encode()).hexdigest()
-            cache.set(
-                f"token:{hashed_token}",
-                "true",
-                timeout=60 * 60 * 24 * 7,
-            )
-
             UserService.create_login_record(user, request_meta)
             return tokens
         except Exception as e:
@@ -59,11 +50,6 @@ class UserService:
     @staticmethod
     def handle_logout(user: User, refresh_token: str) -> bool:
         try:
-            # 토큰을 해시로 변환하여 짧은 키 생성
-            hashed_token = hashlib.md5(refresh_token.encode()).hexdigest()
-            blacklist_key = f"bl:{hashed_token}"
-            cache.set(blacklist_key, "true", timeout=60 * 60 * 24 * 7)
-
             try:
                 login = (
                     Login.objects.filter(user_num_id=user.id)
@@ -83,9 +69,8 @@ class UserService:
 
     @staticmethod
     def is_token_blacklisted(refresh_token: str) -> bool:
-        # 토큰을 해시로 변환하여 검색
-        hashed_token = hashlib.md5(refresh_token.encode()).hexdigest()
-        return bool(cache.get(f"bl:{hashed_token}"))
+        # Redis 제거로 인해 항상 False 반환
+        return False
 
     @staticmethod
     def deactivate_user(user: User) -> None:
