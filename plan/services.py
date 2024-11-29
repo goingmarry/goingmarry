@@ -2,7 +2,7 @@ from typing import Any, Dict, List, Optional
 
 from django.db.models.query import QuerySet
 
-from apps.users.models import User
+from user.models import User
 
 from .models import Plan
 
@@ -10,30 +10,26 @@ from .models import Plan
 class PlanService:
     @staticmethod
     def get_plans(user: "User", search_keyword: Optional[str] = None) -> QuerySet[Plan]:
-        query = Plan.objects.filter(
-            planner_id=user.user_num, is_deleted=False
-        )  # 수정된 부분
+        query = Plan.objects.filter(planner_id=user.id, is_deleted=False)  # 수정된 부분
         if search_keyword:
             query = query.filter(title__icontains=search_keyword)
         return query.order_by("ordering_num")
 
     @staticmethod
     def create_plan(data: Dict[str, Any], user: "User") -> Plan:
-        # user_num을 planner로 설정
-        data["planner_id"] = user.user_num  # user가 아닌 user_num으로 설정
+        # id을 planner로 설정
+        data["planner_id"] = user.id  # user가 아닌 id으로 설정
         return Plan.objects.create(**data)
 
     @staticmethod
     def update_plan(plan_id: int, data: Dict[str, Any], user: "User") -> Plan:
         try:
-            plan = Plan.objects.get(id=plan_id, planner_id=user.user_num)  # 수정된 부분
+            plan = Plan.objects.get(id=plan_id, planner_id=user.id)  # 수정된 부분
             print(f"Debug - Plan planner_id: {plan.planner_id}")
-            print(f"Debug - User user_num: {user.user_num}")
+            print(f"Debug - User id: {user.id}")
 
-            if plan.planner_id != user.user_num:
-                print(
-                    f"Debug - Authorization failed: {plan.planner_id} != {user.user_num}"
-                )
+            if plan.planner_id != user.id:
+                print(f"Debug - Authorization failed: {plan.planner_id} != {user.id}")
                 raise PermissionError("Not authorized to update this plan")
 
             # 데이터 업데이트
@@ -49,9 +45,7 @@ class PlanService:
 
     @staticmethod
     def delete_plan(plan_id: int, user: "User") -> bool:
-        plan = Plan.objects.get(
-            id=plan_id, planner_id=user.user_num
-        )  # user.user_num 사용
+        plan = Plan.objects.get(id=plan_id, planner_id=user.id)  # user.id 사용
         plan.is_deleted = True
         plan.save()
         return True

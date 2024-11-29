@@ -27,17 +27,17 @@ class VerificationSerializer(serializers.Serializer[Any]):
 class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
     def validate(self, attrs: Dict[str, Any]) -> Dict[str, Any]:
         # attrs는 요청에서 전달된 데이터를 포함하는 딕셔너리
-        # 요청 데이터에서 user_id 추출
-        user_id = attrs.get("user_id")
+        # 요청 데이터에서 username 추출
+        username = attrs.get("username")
         # 요청 데이터에서 password 추출
         password = attrs.get("password")
 
-        # user_id와 password가 모두 제공되었는지 확인
-        if user_id and password:
+        # username password가 모두 제공되었는지 확인
+        if username and password:
             # Django의 authenticate 함수를 사용해 사용자 인증
             user = authenticate(
-                username=user_id, password=password
-            )  # user_id를 username으로 변경하여 사용
+                username=username, password=password
+            )  # username username으로 변경하여 사용
 
             # 인증 실패 시 예외 발생
             if not user:
@@ -51,12 +51,12 @@ class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
                 raise serializers.ValidationError("This account is inactive")
 
             # 성공적으로 인증되었으면 username 필드를 설정하여 부모 클래스의 validate를 호출
-            attrs["username"] = user_id
+            attrs["username"] = username
             # 부모 클래스의 검증 로직 실행 및 결과 반환
             return super().validate(attrs)
         else:
-            # user_id나 password가 누락된 경우 예외 발생
-            raise serializers.ValidationError('Must include "user_id" and "password".')
+            # username password가 누락된 경우 예외 발생
+            raise serializers.ValidationError('Must include "username" and "password".')
 
 
 # 사용자 생성용 Serializer 클래스
@@ -68,7 +68,7 @@ class UserCreateSerializer(serializers.ModelSerializer[User]):
         # 직렬화할 모델을 User 로 지정
         model = User
         # 직렬화할 필드들 지정
-        fields = ["user_id", "password", "nickname", "email", "gender"]
+        fields = ["username", "password", "nickname", "email", "gender"]
         # gender 필드는 선택 사항이므로 extra_kwargs로 필수 여부를 False로 설정
         extra_kwargs = {
             "gender": {"required": False},

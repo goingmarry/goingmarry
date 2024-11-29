@@ -157,8 +157,8 @@ SIMPLE_JWT = {
     "ACCESS_TOKEN_LIFETIME": timedelta(minutes=30),
     "REFRESH_TOKEN_LIFETIME": timedelta(days=7),
     "AUTH_HEADER_TYPES": ("Bearer",),
-    "USER_ID_FIELD": "user_id",
-    "USER_ID_CLAIM": "user_id",
+    "USER_ID_FIELD": "username",
+    "USER_ID_CLAIM": "username",
     "TOKEN_OBTAIN_SERIALIZER": "user.serializers.CustomTokenObtainPairSerializer",
 }
 

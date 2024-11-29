@@ -22,13 +22,13 @@ class CustomUserAdmin(UserAdmin):  # type: ignore
     model = User
 
     # 관리자 인터페이스에서 목록을 표시할 필드를 정의
-    list_display = ("user_id", "email", "nickname", "is_active", "created_at")
+    list_display = ("username", "email", "nickname", "is_active", "created_at")
 
     # 관리자 페이지의 우측 필터를 추가
     list_filter = ("is_active", "created_at")
 
     # 관리자 인터페이스의 검색창에서 검색 가능한 필드를 정의
-    search_fields = ("user_id", "email", "nickname")
+    search_fields = ("username", "email", "nickname")
 
     # 목록의 기본 정렬 순서를 설정. 최신 생성 날짜 기준으로.
     ordering = ("-created_at",)
@@ -36,7 +36,7 @@ class CustomUserAdmin(UserAdmin):  # type: ignore
     # 사용자 세부 정보를 표시할 필드 그룹을 정의
     fieldsets = (
         # [기본 정보] 섹션에서 나오는 필드
-        (None, {"fields": ("user_id", "password")}),
+        (None, {"fields": ("username", "password")}),
         # [개인 정보] 섹션에 나오는 필드]
         ("Personal info", {"fields": ("nickname", "email", "gender")}),
         # [권한] 섹션에 활성 상태 및 관리자 권한 관련 필드를 표시]
@@ -54,7 +54,7 @@ class CustomUserAdmin(UserAdmin):  # type: ignore
                 # "wide" 클래스는 입력 필드를 넓게 표시하도록 CSS를 설정한다.
                 "classes": ("wide",),
                 # 새 사용자 추가 양식에 표시할 필드를 정의
-                "fields": ("user_id", "password1", "password2", "nickname", "email"),
+                "fields": ("username", "password1", "password2", "nickname", "email"),
             },
         ),
     )

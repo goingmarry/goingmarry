@@ -50,20 +50,20 @@ class SignupView(APIView):
 # 사용자 로그인 처리를 위한 뷰 클래스
 class LoginView(APIView):
     def post(self, request: Request) -> Response:
-        # 요청 데이터에서 user_id와 password 추출
-        user_id = request.data.get("user_id")
+        # 요청 데이터에서 username password 추출
+        username = request.data.get("username")
         password = request.data.get("password")
 
-        # user_id나 password가 없으면 오류 메시지 반환
-        if not user_id or not password:
+        # username password가 없으면 오류 메시지 반환
+        if not username or not password:
             return Response(
-                {"error": "Both user_id and password are required"},
+                {"error": "Both username and password are required"},
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
         try:
-            # 주어진 user_id로 사용자 검색
-            user = User.objects.get(user_id=user_id)
+            # 주어진 username 사용자 검색
+            user = User.objects.get(username=username)
             # 비밀번호가 맞는지 확인
             if user.check_password(password):
                 # 비활성 사용자일 경우 오류 메시지 반환

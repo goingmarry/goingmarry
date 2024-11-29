@@ -10,21 +10,21 @@ from django.db import models
 
 class CustomUserManager(BaseUserManager[Any]):
     def create_user(
-        self, user_id: str, password: Optional[str] = None, **extra_fields: Any
+        self, username: str, password: Optional[str] = None, **extra_fields: Any
     ) -> "User":
-        if not user_id:
-            raise ValueError("User ID is required")
-        user = cast(User, self.model(user_id=user_id, **extra_fields))
+        if not username:
+            raise ValueError("Username ID is required")
+        user = cast(User, self.model(username=username, **extra_fields))
         user.set_password(password)
         user.save(using=self._db)
         return user
 
     def create_superuser(
-        self, user_id: str, password: Optional[str] = None, **extra_fields: Any
+        self, username: str, password: Optional[str] = None, **extra_fields: Any
     ) -> "User":
         extra_fields.setdefault("is_staff", True)
         extra_fields.setdefault("is_superuser", True)
-        return self.create_user(user_id, password, **extra_fields)
+        return self.create_user(username, password, **extra_fields)
 
 
 class User(AbstractBaseUser, PermissionsMixin):
