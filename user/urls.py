@@ -11,4 +11,3 @@ urlpatterns = [
     path("deactivate/", views.UserDeactivateView.as_view(), name="deactivate"),
     path("token/refresh/", views.TokenRefreshView.as_view(), name="token-refresh"),
 ]
-
