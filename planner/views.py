@@ -3,7 +3,9 @@ from typing import Any  # Any 타입을 사용하기 위해 추가
 from django.contrib.auth import get_user_model  # User 모델을 가져오기 위해 추가
 from django.db.models import QuerySet  # QuerySet 타입을 사용하기 위해 추가
 from rest_framework import generics, permissions
-from rest_framework.serializers import BaseSerializer  # BaseSerializer를 사용하기 위해 추가
+from rest_framework.serializers import (
+    BaseSerializer,
+)  # BaseSerializer를 사용하기 위해 추가
 
 from .models import Planner
 from .serializers import PlannerSerializer
