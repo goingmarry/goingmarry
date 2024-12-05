@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8"> <!-- 문자 인코딩 설정 -->
+    <title>계획 목록</title> <!-- 페이지 제목 -->
+    <style>
+        body {
+            font-family: Arial, sans-serif; /* 기본 글꼴 설정 */
+            background-color: #f5f6f7; /* 배경색 설정 */
+            margin: 0; /* 기본 마진 제거 */
+            padding: 20px; /* 페이지 내부 여백 설정 */
+        }
+        .container {
+            max-width: 800px; /* 최대 너비 설정 */
+            margin: 0 auto; /* 중앙 정렬 */
+            background-color: white; /* 배경색을 흰색으로 설정 */
+            border-radius: 8px; /* 모서리를 둥글게 설정 */
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1); /* 그림자 효과 추가 */
+            padding: 20px; /* 내부 여백 설정 */
+        }
+        h1 {
+            text-align: center; /* 제목을 중앙 정렬 */
+            color: #333; /* 제목 색상 설정 */
+        }
+        .plan-item {
+            border-bottom: 1px solid #ccc; /* 항목 구분을 위한 하단 경계선 */
+            padding: 10px 0; /* 항목 내부 여백 설정 */
+        }
+        .plan-item:last-child {
+            border-bottom: none; /* 마지막 항목의 하단 경계선 제거 */
+        }
+        button {
+            background-color: #03c75a; /* 버튼 배경색 설정 */
+            color: white; /* 버튼 글자색을 흰색으로 설정 */
+            border: none; /* 버튼 테두리 제거 */
+            padding: 10px; /* 버튼 내부 여백 설정 */
+            border-radius: 5px; /* 버튼 모서리를 둥글게 설정 */
+            cursor: pointer; /* 마우스 커서를 포인터로 변경하여 클릭 가능함을 표시 */
+        }
+        .form-group {
+            margin-bottom: 15px; /* 폼 그룹 간의 간격 설정 */
+        }
+        .footer {
+            text-align: center;
+            margin-top: 20px;
+            font-size: 14px;
+            color: #777;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>계획 목록</h1> <!-- 페이지 제목 -->
+
+        <!-- 계획 생성 폼 -->
+        <form method="post" action="{% url 'plan:plan-create' %}">
+            <div class="form-group">
+                <input type="text" name="title" placeholder="계획 제목" required> <!-- 계획 제목 입력 필드 -->
+            </div>
+            <div class="form-group">
+                <input type="date" name="start_date" placeholder="시작 날짜"> <!-- 시작 날짜 입력 필드 -->
+            </div>
+            <div class="form-group">
+                <input type="date" name="end_date" placeholder="종료 날짜"> <!-- 종료 날짜 입력 필드 -->
+            </div>
+            <button type="submit">계획 추가</button> <!-- 계획 추가 버튼 -->
+        </form>
+
+        <!-- 계획 목록 표시 -->
+        <div id="plan-list">
+            {% for plan in plans %}
+                <div class="plan-item">
+                    <h3>{{ plan.title }}</h3> <!-- 계획 제목 표시 -->
+                    <p>시작 날짜: {{ plan.start_date }} | 종료 날짜: {{ plan.end_date }}</p> <!-- 날짜 정보 표시 -->
+                    <a href="{% url 'plan:plan-update' plan.id %}">수정</a> <!-- 수정 링크 -->
+                    <form method="post" action="{% url 'plan:plan-delete' plan.id %}" style="display:inline;">
+                        <button type="submit">삭제</button> <!-- 삭제 버튼 -->
+                    </form>
+                </div>
+            {% empty %}
+                <p>계획이 없습니다.</p> <!-- 계획이 없을 경우 메시지 표시 -->
+            {% endfor %}
+        </div>
+
+        <div class="footer">
+            © {{ current_year }} Your Company Name. All rights reserved. <!-- 저작권 정보 -->
+        </div>
+    </div>
+</body>
+</html>

@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8"> <!-- 문자 인코딩 설정 -->
+    <title>회원가입</title> <!-- 페이지 제목 -->
+    <style>
+        body { 
+            font-family: Arial, sans-serif; /* 기본 글꼴 설정 */
+            background-color: #f5f6f7; /* 배경색 설정 */
+            display: flex; /* 플렉스 박스를 사용하여 중앙 정렬 */
+            justify-content: center; /* 가로 방향 중앙 정렬 */
+            align-items: center; /* 세로 방향 중앙 정렬 */
+            height: 100vh; /* 화면 높이를 100%로 설정 */
+            margin: 0; /* 기본 마진 제거 */
+        }
+        .container { 
+            width: 400px; /* 컨테이너 너비 설정 */
+            padding: 20px; /* 내부 여백 설정 */
+            background-color: white; /* 배경색을 흰색으로 설정 */
+            border-radius: 8px; /* 모서리를 둥글게 설정 */
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1); /* 그림자 효과 추가 */
+        }
+        h1 { text-align: center; } /* 제목을 중앙 정렬 */
+        form { margin-bottom: 20px; } /* 폼 아래쪽 여백 설정 */
+        label, input, button { display: block; width: 100%; margin-top: 10px; } /* 라벨, 입력 필드 및 버튼을 블록 요소로 설정하고 너비를 100%로 설정 */
+        button {
+            background-color: #03c75a; /* 버튼 배경색 설정 */
+            color: white; /* 버튼 글자색을 흰색으로 설정 */
+            border: none; /* 버튼 테두리 제거 */
+            padding: 10px; /* 버튼 내부 여백 설정 */
+            border-radius: 5px; /* 버튼 모서리를 둥글게 설정 */
+            cursor: pointer; /* 마우스 커서를 포인터로 변경하여 클릭 가능함을 표시 */
+        }
+        .error-message {
+            color: red; /* 오류 메시지 글자색을 빨간색으로 설정 */
+            text-align: center; /* 오류 메시지를 중앙 정렬 */
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>회원가입</h1> <!-- 페이지 제목 -->
+
+        <!-- 회원가입 폼 -->
+        <form method="post" action="{% url 'user:signup' %}" id="signup-form">
+            {% csrf_token %} <!-- CSRF 보호를 위한 토큰 -->
+
+            <label for="signup-username">사용자 이름:</label> <!-- 사용자 이름 입력 필드에 대한 라벨 -->
+            <input type="text" id="signup-username" name="username" required> <!-- 사용자 이름 입력 필드 -->
+
+            <label for="signup-password">비밀번호:</label> <!-- 비밀번호 입력 필드에 대한 라벨 -->
+            <input type="password" id="signup-password" name="password" required> <!-- 비밀번호 입력 필드 -->
+
+            <label for="signup-nickname">닉네임:</label> <!-- 닉네임 입력 필드에 대한 라벨 -->
+            <input type="text" id="signup-nickname" name="nickname" required> <!-- 닉네임 입력 필드 -->
+
+            <label for="signup-email">이메일:</label> <!-- 이메일 입력 필드에 대한 라벨 -->
+            <input type="email" id="signup-email" name="email" required> <!-- 이메일 입력 필드 -->
+
+            <button type="submit">회원가입</button> <!-- 회원가입 버튼 -->
+        </form>
+
+        <!-- 로그인 페이지로 돌아가기 링크 -->
+        <p style="text-align:center;">이미 계정이 있으신가요? <a href="{% url 'user:login' %}">로그인하기</a></p>
+
+        <!-- 오류 메시지 표시 -->
+        {% if error %}
+        <script>
+            alert("{{ error }}"); // 오류 메시지 알림
+            window.location.reload(); // 페이지 새로 고침
+        </script>
+        {% endif %}
+
+        <!-- 성공 메시지 표시 -->
+        {% if success %}
+        <script>
+            alert("회원가입 되었습니다."); // 성공 메시지 알림
+            window.location.href = "{% url 'user:login' %}"; // 로그인 페이지로 이동
+        </script>
+        {% endif %}
+        
+    </div>
+</body>
+</html>

@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <title>로그인</title>
+    <style>
+        /* 네이버 로그인 스타일을 반영한 간단한 스타일링 */
+        body { 
+            font-family: Arial, sans-serif; 
+            background-color: #f5f6f7; 
+            display: flex; 
+            justify-content: center; 
+            align-items: center; 
+            height: 100vh; 
+            margin: 0;
+        }
+        .container { 
+            width: 400px; 
+            padding: 20px; 
+            background-color: white; 
+            border-radius: 8px; 
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1); 
+        }
+        h1 { text-align: center; }
+        form { margin-bottom: 20px; }
+        label, input, button { display: block; width: 100%; margin-top: 10px; }
+        button {
+            background-color: #03c75a;
+            color: white;
+            border: none;
+            padding: 10px;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        .signup-button {
+            background-color: #eee;
+            color: #333;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>로그인</h1>
+
+        <!-- 로그인 폼 -->
+        <section id="login">
+            <form method="post" action="{% url 'user:login' %}" id="login-form">
+                {% csrf_token %}
+                <label for="login-username">사용자 이름:</label>
+                <input type="text" id="login-username" name="username" required>
+
+                <label for="login-password">비밀번호:</label>
+                <input type="password" id="login-password" name="password" required>
+
+                <button type="submit">로그인</button>
+            </form>
+        </section>
+
+        <!-- 회원가입 버튼 -->
+        <section id="signup">
+            <h2>아직 회원이 아니신가요?</h2>
+            <button class="signup-button" onclick="location.href='{% url 'user:signup' %}'">회원가입</button>
+        </section>
+    </div>
+</body>
+</html>

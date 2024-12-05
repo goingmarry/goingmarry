@@ -19,6 +19,8 @@ from rest_framework.views import APIView
 # JWT토큰 관련 처리를 위한 RefreshToken 임포트
 from rest_framework_simplejwt.tokens import RefreshToken
 
+from django.shortcuts import render, redirect  # redirect 추가
+from django.contrib.auth import login  # login 함수 임포트 추가
 from .models import User
 from .serializers import UserCreateSerializer
 from .services import UserService
@@ -26,12 +28,28 @@ from .services import UserService
 
 # 사용자 회원가입을 처리하는 뷰 클래스
 class SignupView(APIView):
+    def get(self, request):
+        # 회원가입 폼을 렌더링
+        return render(request, 'signup.html')
+
     # 요청으로 받은 데이터로 UserCreateSerializer 객체 생성
     def post(self, request: Request) -> Response:
         serializer = UserCreateSerializer(data=request.data)
 
         # 직렬화된 데이터가 유효한지 확인
         if serializer.is_valid():
+            username = serializer.validated_data.get('username')
+            email = serializer.validated_data.get('email')
+
+            # 사용자 이름과 이메일이 이미 존재하는지 확인
+            if User.objects.filter(username=username).exists():
+                # 사용자 이름이 이미 존재할 경우 오류 메시지를 템플릿에 전달
+                return render(request, 'signup.html', {'error': '존재하는 계정입니다.'})
+
+            if User.objects.filter(email=email).exists():
+                # 이메일이 이미 등록된 경우 오류 메시지를 템플릿에 전달
+                return render(request, 'signup.html', {'error': '이미 등록된 이메일입니다.'})
+
             try:
                 # 유효한 데이터로 사용자 생성
                 user = UserService.create_user(serializer.validated_data)
@@ -40,18 +58,23 @@ class SignupView(APIView):
             except Exception as e:
                 # 예외 발생 시 오류 메시지 반환 (400 Bad Request)
                 return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+
         # 직렬화된 데이터가 유효하지 않으면 오류 메시지 반환
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
 # 사용자 로그인 처리를 위한 뷰 클래스
 class LoginView(APIView):
+    def get(self, request):
+        # 로그인 폼을 렌더링
+        return render(request, 'login.html')
+
     def post(self, request: Request) -> Response:
-        # 요청 데이터에서 username password 추출
+        # 요청 데이터에서 username과 password 추출
         username = request.data.get("username")
         password = request.data.get("password")
 
-        # username password가 없으면 오류 메시지 반환
+        # username과 password가 없으면 오류 메시지 반환
         if not username or not password:
             return Response(
                 {"error": "Both username and password are required"},
@@ -69,9 +92,9 @@ class LoginView(APIView):
                         {"error": "User account is not active"},
                         status=status.HTTP_401_UNAUTHORIZED,
                     )
-                # 로그인 처리 후 토큰 생성
-                tokens = UserService.handle_login(user, request.META)
-                return Response(tokens, status=status.HTTP_200_OK)
+                # 로그인 처리 후 plan 목록 페이지로 리다이렉트
+                login(request, user)  # Django의 login 함수 사용
+                return redirect('plan:plan-list')  # 계획 목록 페이지로 리다이렉트
             else:
                 # 비밀번호가 잘못된 경우 오류 메시지 반환
                 return Response(
@@ -168,6 +191,7 @@ class UserDeactivateView(APIView):
             user = cast(User, request.user)
             # 사용자 계정을 비활성화
             UserService.deactivate_user(user)
+
             return Response(status=status.HTTP_200_OK)
 
         except Exception as e:

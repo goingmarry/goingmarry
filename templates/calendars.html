@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Calendar Management</title>
+    <style>
+        body { font-family: Arial, sans-serif; }
+        .container { max-width: 800px; margin: 0 auto; padding: 20px; }
+        h1 { text-align: center; }
+        .calendar-list { list-style-type: none; padding: 0; }
+        .calendar-item { border-bottom: 1px solid #ccc; padding: 10px 0; display: flex; align-items: center; }
+        .form-section { margin-top: 20px; }
+        label, input, button, select { display: block; width: 100%; margin-top: 10px; }
+        .actions { margin-top: 20px; text-align: center; }
+    </style>
+    <script>
+        function createOrUpdateCalendar(action) {
+            const selectedPlans = []; // 선택된 계획 ID를 저장할 배열
+            document.querySelectorAll('input[name="selected_plans"]:checked').forEach(checkbox => {
+                selectedPlans.push(checkbox.value);
+            });
+
+            if (selectedPlans.length > 0) {
+                if (action === 'create') {
+                    alert('Creating new calendar with plans: ' + selectedPlans.join(', '));
+                    // 실제 캘린더 생성 로직 추가
+                } else if (action === 'update') {
+                    const calendarId = document.getElementById('existing-calendars').value;
+                    alert('Updating calendar ' + calendarId + ' with plans: ' + selectedPlans.join(', '));
+                    // 실제 캘린더 업데이트 로직 추가
+                }
+            } else {
+                alert('Please select at least one plan to proceed.');
+            }
+        }
+    </script>
+</head>
+<body>
+    <div class="container">
+        <h1>Calendar Management</h1>
+
+        <!-- 기존 캘린더 목록 -->
+        <section id="calendar-list">
+            <h2>Your Calendars</h2>
+            <ul class="calendar-list">
+                {% for calendar in calendars %}
+                <li class="calendar-item">
+                    <span>{{ calendar.title }} - {{ calendar.date }}</span>
+                    <!-- 삭제 버튼 -->
+                    <form method="post" action="{% url 'calendar:calendar-delete' calendar.id %}" style="display:inline;">
+                        {% csrf_token %}
+                        <button type="submit">Delete</button>
+                    </form>
+                </li>
+                {% empty %}
+                <li>No calendars available.</li>
+                {% endfor %}
+            </ul>
+        </section>
+
+        <!-- 캘린더 생성 및 업데이트 폼 -->
+        <section id="create-update-calendar" class="form-section">
+            <h2>Create or Update Calendar</h2>
+
+            <!-- 새로운 캘린더 생성 버튼 -->
+            <button onclick="createOrUpdateCalendar('create')">Create New Calendar</button>
+
+            <!-- 기존 캘린더에 덮어쓰기 -->
+            <select id="existing-calendars">
+                {% for calendar in calendars %}
+                <option value="{{ calendar.id }}">{{ calendar.title }}</option>
+                {% empty %}
+                <option disabled>No calendars to update.</option>
+                {% endfor %}
+            </select>
+            <button onclick="createOrUpdateCalendar('update')">Update Selected Calendar</button>
+        </section>
+
+        <!-- 액션 버튼 -->
+        <div class="actions">
+            <button onclick="window.location.href='/'">Main Page</button>
+            <button onclick="location.reload();">Refresh</button>
+        </div>
+
+    </div>
+
+</body>
+</html>
